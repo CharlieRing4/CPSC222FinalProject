@@ -18,10 +18,12 @@ def clean_activities(df:pd.DataFrame):
     date_ser = pd.to_datetime(date_df)
     print(date_ser)
 
+
 def compute_proportions(df:pd.DataFrame):
     length = len(df)
     total = df['Flossed'].sum()
     return length, total
+
 
 def flossing_hyp_test(df:pd.DataFrame):
     grouped_by_dotw = df.groupby('Day of the Week')
@@ -39,14 +41,60 @@ def flossing_hyp_test(df:pd.DataFrame):
     print(f'PValue: {pval:.3f}')
 
 
-def group_by_month(df:pd.DataFrame):
+def pushups_display(df:pd.DataFrame):
     jan_df = df.iloc[:31]
     feb_df = df.iloc[32:59]
     mar_df = df.iloc[60:90]
     apr_df = df.iloc[91:]
 
+    plt.figure(layout='compressed')
+    plt.xlim(0,5)
+    plt.ylim(0,30)
+    plt.title('Average Daily Pushups by Month')
+    plt.xticks([1,2,3,4],['January','February','March','April'])
+
+    jan_mean = jan_df['Pushups'].mean()
+    feb_mean = feb_df['Pushups'].mean()
+    mar_mean = mar_df['Pushups'].mean()
+    apr_mean = apr_df['Pushups'].mean()
+
+    heights = [jan_mean,feb_mean,mar_mean,apr_mean]
+    x=[1,2,3,4]
+
+    plt.bar(x=x,height=heights,color=['powderblue','c','darkcyan','teal'])
+    plt.plot(1,jan_mean,'o',color='black')
+    plt.plot(2,feb_mean,'o',color='black')
+    plt.plot(3,mar_mean,'o',color='black')
+    plt.plot(4,apr_mean,'o',color='black')
+        
+    for i,val in enumerate(heights):
+        plt.annotate(f'{val:.2f}', (x[i],heights[i]),textcoords='offset points', xytext=(0,10), ha='center' )
+    plt.show()
+
+
+def pushups_f_test(df:pd.DataFrame):
+    jan_df = df.iloc[:31]
+    feb_df = df.iloc[32:59]
+    mar_df = df.iloc[60:90]
+    apr_df = df.iloc[91:]
+
+    f_stat, pval = stats.f_oneway(jan_df['Pushups'],feb_df['Pushups'],mar_df['Pushups'],apr_df['Pushups'])
+    print(f'F Statistic: {f_stat:.3f}')
+    print(f'P-Value: {pval:.3f}')
+
+
+def conf_int(x,mean,lbound,ubound):
+    horiz_line_width = .25
+    left = x-horiz_line_width/2
+    right = x+horiz_line_width/2
     
-    print(apr_df.tail())
+    plt.grid()
+    plt.plot([x,x],[lbound,ubound],color='b')
+    plt.plot(x,mean,'ro')
+    plt.plot([left,right],[lbound,lbound],color='b')
+    plt.plot([left,right],[ubound,ubound],color='b')
+    
+    plt.show()
 
 
 
@@ -58,7 +106,8 @@ def main():
     clean_habits_df = clean_habits(habits_df)
 
     # flossing_hyp_test(clean_habits_df)
-    group_by_month(clean_habits_df)
+    pushups_display(clean_habits_df)
+    pushups_ttest(clean_habits_df)
 
     pass
 
