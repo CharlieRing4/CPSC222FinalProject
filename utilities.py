@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 from datetime import datetime, timezone
 from statsmodels.stats.proportion import proportions_ztest
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix,ConfusionMatrixDisplay
+from sklearn.neighbors import KNeighborsClassifier
 import json
 
 def clean_habits(df:pd.DataFrame):
@@ -12,7 +17,7 @@ def clean_habits(df:pd.DataFrame):
     ind_df = df.set_index('Date')
     return ind_df
     
-def clean_insta():
+def clean_and_load_insta():
     times_list = []
     daily_groups = {}
 
@@ -29,8 +34,7 @@ def clean_insta():
     insta_series = pd.Series(counts_dict,name='Liked Posts')
     df_counts = insta_series.reset_index()
     df_counts.columns = ['Date','Liked Posts']
-    print(df_counts.head())
-    return df_counts,counts_dict
+    return df_counts
 
 def clean_activities(df:pd.DataFrame):
 
@@ -117,27 +121,38 @@ def conf_int(x,mean,lbound,ubound):
     
     plt.show()
 
-def make_insta_graph(insta_df:pd.DataFrame):
-    plt.figure()
+def make_insta_graph(merged_df:pd.DataFrame):
+    weekly_data = merged_df.resample('W').sum()
+    x=np.arange(len(weekly_data))
+    width=.4
 
+    plt.figure(layout='constrained',figsize=(12,5))
+    plt.bar(x=x,height=weekly_data['Liked Posts'],color='pink')
+    plt.title('Liked Instagram Posts by Week')
+    plt.xlabel('Week')
+    plt.ylabel('Liked Posts')
+    plt.xticks(x,weekly_data.index.strftime('%m-%d-%y'),rotation=45)
+    plt.show()
 
 
 def main():
     running_df = pd.read_csv('activities.csv')
     habits_df = pd.read_csv('habits.csv')
-    insta_df,counts_dict = clean_insta()
+    insta_df,counts_dict = clean_and_load_insta()
 
     clean_habits_df = clean_habits(habits_df)
     clean_habits_df.index = pd.to_datetime(clean_habits_df.index).strftime('%m/%d/%y')
 
     merged_df = pd.merge(clean_habits_df,insta_df,left_index=True,right_on='Date',how='outer')
-
+    merged_df['Date']= pd.to_datetime(merged_df['Date'])
     merged_df.set_index('Date',inplace=True)
+    merged_df['Liked Posts'] = merged_df['Liked Posts'].fillna(0)
     merged_df.to_csv('test.csv')
 
     # flossing_hyp_test(clean_habits_df)
     pushups_display(clean_habits_df)
     pushups_f_test(clean_habits_df)
+    make_insta_graph(merged_df)
 
     pass
 
