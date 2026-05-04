@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-import datetime as dt
+from datetime import datetime, timezone
 from statsmodels.stats.proportion import proportions_ztest
+import json
 
 def clean_habits(df:pd.DataFrame):
     df['Pushups'] = df['Pushups'].fillna(0)
@@ -11,8 +12,28 @@ def clean_habits(df:pd.DataFrame):
     ind_df = df.set_index('Date')
     return ind_df
     
+def clean_insta():
+    times_list = []
+    daily_groups = {}
+
+    with open('liked_posts.json','r') as file:
+        json_obj = json.load(file)
+    
+    for item in range(len(json_obj)):
+        timestamp = json_obj[item]['timestamp']
+        day_name = datetime.fromtimestamp(timestamp).strftime('%m/%d/%y')
+        daily_groups.setdefault(day_name, []).append(timestamp)
+
+    counts_dict = {day: len(items) for day, items in daily_groups.items()}
+
+    insta_series = pd.Series(counts_dict,name='Liked Posts')
+    df_counts = insta_series.reset_index()
+    df_counts.columns = ['Date','Liked Posts']
+    print(df_counts.head())
+    return df_counts,counts_dict
 
 def clean_activities(df:pd.DataFrame):
+
     # ToDo
     date_df = df['Activity Date']
     date_ser = pd.to_datetime(date_df)
@@ -50,7 +71,7 @@ def pushups_display(df:pd.DataFrame):
     plt.figure(layout='compressed')
     plt.xlim(0,5)
     plt.ylim(0,30)
-    plt.title('Average Daily Pushups by Month')
+    plt.title('Average Pushups Per Day')
     plt.xticks([1,2,3,4],['January','February','March','April'])
 
     jan_mean = jan_df['Pushups'].mean()
@@ -69,7 +90,7 @@ def pushups_display(df:pd.DataFrame):
         
     for i,val in enumerate(heights):
         plt.annotate(f'{val:.2f}', (x[i],heights[i]),textcoords='offset points', xytext=(0,10), ha='center' )
-    plt.show()
+    # plt.show()
 
 
 def pushups_f_test(df:pd.DataFrame):
@@ -96,18 +117,27 @@ def conf_int(x,mean,lbound,ubound):
     
     plt.show()
 
+def make_insta_graph(insta_df:pd.DataFrame):
+    plt.figure()
+
 
 
 def main():
     running_df = pd.read_csv('activities.csv')
     habits_df = pd.read_csv('habits.csv')
+    insta_df,counts_dict = clean_insta()
 
-    # clean_activities(running_df)
     clean_habits_df = clean_habits(habits_df)
+    clean_habits_df.index = pd.to_datetime(clean_habits_df.index).strftime('%m/%d/%y')
+
+    merged_df = pd.merge(clean_habits_df,insta_df,left_index=True,right_on='Date',how='outer')
+
+    merged_df.set_index('Date',inplace=True)
+    merged_df.to_csv('test.csv')
 
     # flossing_hyp_test(clean_habits_df)
     pushups_display(clean_habits_df)
-    pushups_ttest(clean_habits_df)
+    pushups_f_test(clean_habits_df)
 
     pass
 
