@@ -138,7 +138,7 @@ def make_insta_graph(merged_df:pd.DataFrame):
 def main():
     running_df = pd.read_csv('activities.csv')
     habits_df = pd.read_csv('habits.csv')
-    insta_df,counts_dict = clean_and_load_insta()
+    insta_df = clean_and_load_insta()
 
     clean_habits_df = clean_habits(habits_df)
     clean_habits_df.index = pd.to_datetime(clean_habits_df.index).strftime('%m/%d/%y')
