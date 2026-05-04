@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-from datetime import datetime, timezone
+from datetime import datetime
 from statsmodels.stats.proportion import proportions_ztest
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -65,6 +65,19 @@ def flossing_hyp_test(df:pd.DataFrame):
     print(f'Test Statistic: {tstat:.3f}')
     print(f'PValue: {pval:.3f}')
 
+    weekday_fails = weekday_length-weekday_successes
+    weekend_fails = weekend_length-weekend_successes
+    weekday_prop = [weekday_successes,weekday_fails]
+    weekend_prop = [weekend_successes,weekend_fails]
+
+    return weekday_prop,weekend_prop
+
+def pie_flossing(prop,label):
+    plt.figure(layout='constrained',figsize=(12,5))
+    plt.pie(x=prop,labels=['Did Floss','Did Not Floss'],colors=['seagreen','indianred'],startangle=45,autopct='%1.1f%%')
+    plt.title(f'{label} Flossing Proportion')
+    plt.legend()
+    plt.show()
 
 def pushups_display(df:pd.DataFrame):
     jan_df = df.iloc[:31]
@@ -126,14 +139,35 @@ def make_insta_graph(merged_df:pd.DataFrame):
     x=np.arange(len(weekly_data))
     width=.4
 
-    plt.figure(layout='constrained',figsize=(12,5))
-    plt.bar(x=x,height=weekly_data['Liked Posts'],color='pink')
+    plt.figure(layout='constrained',figsize=(9,4))
+    plt.bar(x=x,height=weekly_data['Liked Posts'],color='orchid')
     plt.title('Liked Instagram Posts by Week')
     plt.xlabel('Week')
     plt.ylabel('Liked Posts')
     plt.xticks(x,weekly_data.index.strftime('%m-%d-%y'),rotation=45)
     plt.show()
 
+def decision_tree_dotw(merged_df:pd.DataFrame):
+    tree = DecisionTreeClassifier()
+    y = merged_df['Day of the Week'][:112]
+    x = merged_df.drop(['Day of the Week'],axis='columns')
+    x=x.drop(['Liked Posts'],axis='columns')
+    x=x[:112]
+
+    X_train, X_test, y_train, y_test = train_test_split(x,y,test_size=.25,stratify=y)
+    tree.fit(X_train,y_train)
+
+    y_preds = tree.predict(X_test)
+    tree_acc = accuracy_score(y_test,y_preds)
+
+
+    print(f'Accuracy: {tree_acc:.2f}')
+    # print(y_preds)
+    # print(y_test)
+
+def decision_tree_weekly(merged_df:pd.DataFrame):
+
+    pass
 
 def main():
     running_df = pd.read_csv('activities.csv')
@@ -141,18 +175,23 @@ def main():
     insta_df = clean_and_load_insta()
 
     clean_habits_df = clean_habits(habits_df)
-    clean_habits_df.index = pd.to_datetime(clean_habits_df.index).strftime('%m/%d/%y')
+    clean_habits_df.index = pd.to_datetime(clean_habits_df.index,format='%m/%d/%y').strftime('%m/%d/%y')
 
     merged_df = pd.merge(clean_habits_df,insta_df,left_index=True,right_on='Date',how='outer')
-    merged_df['Date']= pd.to_datetime(merged_df['Date'])
+    merged_df['Date']= pd.to_datetime(merged_df['Date'],format='%m/%d/%y')
     merged_df.set_index('Date',inplace=True)
+    merged_df['is_weekend'] = (merged_df.index.dayofweek >=5).astype(int)
     merged_df['Liked Posts'] = merged_df['Liked Posts'].fillna(0)
     merged_df.to_csv('test.csv')
 
-    # flossing_hyp_test(clean_habits_df)
-    pushups_display(clean_habits_df)
-    pushups_f_test(clean_habits_df)
-    make_insta_graph(merged_df)
+    # weekday,weekend = flossing_hyp_test(clean_habits_df)
+    # pie_flossing(weekday,'Weekdays')
+    # pie_flossing(weekend,'Weekends')
+    # pushups_display(clean_habits_df)
+    # pushups_f_test(clean_habits_df)
+    # make_insta_graph(merged_df)
+
+    decision_tree_dotw(merged_df)
 
     pass
 
