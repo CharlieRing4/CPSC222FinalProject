@@ -6,7 +6,7 @@ from datetime import datetime
 from statsmodels.stats.proportion import proportions_ztest
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import accuracy_score, confusion_matrix,ConfusionMatrixDisplay
 from sklearn.neighbors import KNeighborsClassifier
 import json
@@ -139,7 +139,7 @@ def make_insta_graph(merged_df:pd.DataFrame):
     x=np.arange(len(weekly_data))
     width=.4
 
-    plt.figure(layout='constrained',figsize=(9,4))
+    plt.figure(layout='constrained',figsize=(12,5))
     plt.bar(x=x,height=weekly_data['Liked Posts'],color='orchid')
     plt.title('Liked Instagram Posts by Week')
     plt.xlabel('Week')
@@ -148,10 +148,11 @@ def make_insta_graph(merged_df:pd.DataFrame):
     plt.show()
 
 def decision_tree_dotw(merged_df:pd.DataFrame):
-    tree = DecisionTreeClassifier()
+    tree = DecisionTreeClassifier(max_depth=4)
     y = merged_df['Day of the Week'][:112]
     x = merged_df.drop(['Day of the Week'],axis='columns')
-    x=x.drop(['Liked Posts'],axis='columns')
+    x = x.drop(['is_weekend'],axis='columns')
+    x= x.drop(['Liked Posts'],axis='columns')
     x=x[:112]
 
     X_train, X_test, y_train, y_test = train_test_split(x,y,test_size=.25,stratify=y)
@@ -159,16 +160,81 @@ def decision_tree_dotw(merged_df:pd.DataFrame):
 
     y_preds = tree.predict(X_test)
     tree_acc = accuracy_score(y_test,y_preds)
+    print(f'Model Accuracy: {tree_acc:.2f}')
 
-
-    print(f'Accuracy: {tree_acc:.2f}')
-    # print(y_preds)
-    # print(y_test)
+    return tree, y_test, y_preds
 
 def decision_tree_weekly(merged_df:pd.DataFrame):
+    tree = DecisionTreeClassifier(max_depth=4)
+    y = merged_df['is_weekend'][:112]
+    x = merged_df.drop(['Day of the Week'],axis='columns')
+    x = x.drop(['is_weekend'],axis='columns')
+    x= x.drop(['Liked Posts'],axis='columns')
+    x=x[:112]
 
-    pass
+    X_train, X_test, y_train, y_test = train_test_split(x,y,test_size=.20)
+    tree.fit(X_train,y_train)
 
+    y_preds = tree.predict(X_test)
+    tree_acc = accuracy_score(y_test,y_preds)
+    print(f'Model Accuracy: {tree_acc:.2f}')
+
+    return tree, y_test,y_preds 
+
+
+def decision_tree_running(merged_df):
+    tree= DecisionTreeClassifier(max_depth=4)
+    y = merged_df['Day of the Week'][:112]
+    x=merged_df['Miles Ran'][:112]
+    X = x.to_frame()
+
+    X_train, X_test, y_train, y_test = train_test_split(X,y)
+    tree.fit(X_train,y_train)
+
+    y_preds= tree.predict(X_test)
+    tree_acc = accuracy_score(y_test,y_preds)
+
+    print(f'Model Accuracy: {tree_acc:.2f}')
+
+    return tree, y_test, y_preds
+
+def confusion_matrix_disp(tree, y_test,y_preds):
+    tree_cm = confusion_matrix(y_test,y_preds)
+    disp = ConfusionMatrixDisplay(tree_cm,display_labels=tree.classes_)
+    disp.plot()
+
+def decision_tree_disp(tree):
+    plt.figure(layout='constrained',dpi=300,figsize=(12,5))
+    str_classes = []
+    for classe in tree.classes_:
+        str_classes.append(str(classe))
+    plot_tree(tree,class_names=str_classes,filled=True)
+    plt.show()
+
+def knn_weekend(merged_df):
+    y = merged_df['is_weekend'][:112]
+    x = merged_df.drop(['Day of the Week'],axis='columns')
+    x = x.drop(['is_weekend'],axis='columns')
+    x= x.drop(['Liked Posts'],axis='columns')
+    x=x[:112]
+
+    X_train, X_test, y_train, y_test = train_test_split(x,y,stratify=y,test_size=.25)
+
+    scaler = MinMaxScaler()
+    scaler.fit(X_train)
+    X_train_scaled = scaler.transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    knn_clf = KNeighborsClassifier(n_neighbors=3,metric='euclidean')
+    knn_clf.fit(X_train_scaled,y_train)
+
+    y_preds = knn_clf.predict(X_test_scaled)
+    # print(y_preds)
+    knn_acc = accuracy_score(y_test,y_preds)
+
+    print(f'Model Accuracy: {knn_acc:.2f}')
+    return knn_clf, y_test,y_preds
+        
 def main():
     running_df = pd.read_csv('activities.csv')
     habits_df = pd.read_csv('habits.csv')
@@ -191,8 +257,12 @@ def main():
     # pushups_f_test(clean_habits_df)
     # make_insta_graph(merged_df)
 
-    decision_tree_dotw(merged_df)
+    # decision_tree_dotw(merged_df)
+    # tree, y_test, y_preds = decision_tree_weekly(merged_df)
+    # decision_tree_running(merged_df)
+    # knn_weekend(merged_df)
 
+    # decision_tree_disp(tree)
     pass
 
 if __name__=='__main__':
