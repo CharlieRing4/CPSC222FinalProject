@@ -79,7 +79,23 @@ def pie_flossing(prop,label):
     plt.legend()
     plt.show()
 
-def pushups_display(df:pd.DataFrame):
+def pushups_display_weeks(merged_df:pd.DataFrame):
+    weekly_data = merged_df.resample('W').sum()
+    weekly_data = weekly_data[36:]
+    x=np.arange(len(weekly_data))
+    width=.4
+
+    plt.figure(layout='constrained',figsize=(12,5))
+    plt.bar(x=x,height=weekly_data['Pushups'],color='seagreen')
+    plt.plot(x,weekly_data['Pushups'],'-o',color='dimgray')
+    plt.title('Total Pushups Completed by Week')
+    plt.xlabel('Week')
+    plt.ylabel('Pushups')
+    plt.xticks(x,weekly_data.index.strftime('%m-%d-%y'),rotation=45)
+    plt.show()
+    pass
+
+def pushups_display_months(df:pd.DataFrame):
     jan_df = df.iloc[:31]
     feb_df = df.iloc[32:59]
     mar_df = df.iloc[60:90]
@@ -99,7 +115,7 @@ def pushups_display(df:pd.DataFrame):
     heights = [jan_mean,feb_mean,mar_mean,apr_mean]
     x=[1,2,3,4]
 
-    plt.bar(x=x,height=heights,color=['powderblue','c','darkcyan','teal'])
+    plt.bar(x=x,height=heights,color='seagreen')
     plt.plot(1,jan_mean,'o',color='black')
     plt.plot(2,feb_mean,'o',color='black')
     plt.plot(3,mar_mean,'o',color='black')
@@ -114,11 +130,11 @@ def pushups_f_test(df:pd.DataFrame):
     jan_df = df.iloc[:31]
     feb_df = df.iloc[32:59]
     mar_df = df.iloc[60:90]
-    apr_df = df.iloc[91:]
+    apr_df = df.iloc[91:112]
 
     f_stat, pval = stats.f_oneway(jan_df['Pushups'],feb_df['Pushups'],mar_df['Pushups'],apr_df['Pushups'])
-    print(f'F Statistic: {f_stat:.3f}')
-    print(f'P-Value: {pval:.3f}')
+    print(f'F Statistic: {f_stat:.4f}')
+    print(f'P-Value: {pval:.4f}')
 
 
 def conf_int(x,mean,lbound,ubound):
@@ -254,7 +270,7 @@ def main():
     # pie_flossing(weekday,'Weekdays')
     # pie_flossing(weekend,'Weekends')
     # pushups_display(clean_habits_df)
-    # pushups_f_test(clean_habits_df)
+    pushups_f_test(merged_df)
     # make_insta_graph(merged_df)
 
     # decision_tree_dotw(merged_df)
@@ -263,7 +279,7 @@ def main():
     # knn_weekend(merged_df)
 
     # decision_tree_disp(tree)
-    pass
+    # pushups_display_weeks(merged_df)
 
 if __name__=='__main__':
     main()
